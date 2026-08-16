@@ -18,6 +18,10 @@ to TSN applications and operators.
 TrustLink Pay apps, scripts, SDKs, and services point to the gateway server by URL through `TSN_RPC_GATEWAY_URL` (or `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` in browser bundles). They do not import this project as a client library and do not configure upstream Solana RPC URLs directly.
 
 The gateway itself reads a comma-separated list from `TSN_SOLANA_RPC_URLS` and automatically fails over when a provider is slow or unhealthy.
+Provider health and latency are learned from real requests and cached in
+memory. `TSN_RPC_GATEWAY_PROBE_MODE` defaults to `on-demand`, so the gateway
+does not continuously poll upstreams while idle. Set it to `scheduled` only
+when continuous health probes are explicitly required.
 
 ## Ports
 
@@ -36,16 +40,17 @@ TrustLink browser origins permitted to call the gateway. Do not deploy with
 `TSN_RPC_GATEWAY_ALLOW_ANY_ORIGIN=true`; that flag exists only for local
 development. Server-to-server callers do not need a browser `Origin` header.
 
-## Railway deployment
+## Wasmer deployment
 
-This folder includes a `Dockerfile` and `railway.toml`. Create one Railway
-service from this repository with `tsn-protocol/tsn-rpc-gateway` as its root
-directory, then generate a public domain. Railway supplies `PORT`; the gateway
-listens on it automatically. Set the upstream provider URLs and the production
-browser-origin allowlist only in Railway Variables, never in Git.
+The current Devnet deployment is hosted by Wasmer:
 
-The generated service URL is the value for `TSN_RPC_GATEWAY_URL`. The matching
-WebSocket URL uses the same host with a `/ws` path.
+[https://tsn-rpc-gateway.wasmer.app/](https://tsn-rpc-gateway.wasmer.app/)
+
+Set the upstream provider URLs and production browser-origin allowlist only in
+Wasmer environment variables, never in Git. The deployed URL is the value for
+`TSN_RPC_GATEWAY_URL` and `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL` where browser
+access is required. The matching WebSocket URL uses the same host with a
+`/ws` path.
 
 ## Local commands
 

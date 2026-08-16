@@ -3,14 +3,16 @@ const DEFAULT_WS_PATH = "/ws";
 const FALLBACK_TIMEOUT_MS = 4_500;
 const FALLBACK_PROBE_INTERVAL_MS = 60_000;
 const FALLBACK_PROBE_TIMEOUT_MS = 2_500;
+const FALLBACK_PROBE_MODE = "on-demand";
 const FALLBACK_DASHBOARD_REFRESH_MS = 5_000;
 const DEFAULT_SOLANA_RPC_URLS = [
   "https://api.devnet.solana.com",
-  "https://rpc.ankr.com/solana_devnet",
 ];
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://trustlink-pay.vercel.app",
   "https://trustlink-pay-backend.vercel.app",
+  "https://tsn-node.wasmer.app",
+  "https://tsn-receiver-kappa.vercel.app",
   "http://localhost:3001",
   "http://localhost:3000",
 ];
@@ -125,6 +127,13 @@ function parseProbeTimeoutMs(source) {
     : FALLBACK_PROBE_TIMEOUT_MS;
 }
 
+function parseProbeMode(source) {
+  const value = String(readEnv(source, "TSN_RPC_GATEWAY_PROBE_MODE") ?? FALLBACK_PROBE_MODE)
+    .trim()
+    .toLowerCase();
+  return value === "scheduled" ? "scheduled" : "on-demand";
+}
+
 function parseDashboardRefreshMs(source) {
   const rawRefresh = Number(readEnv(source, "TSN_RPC_GATEWAY_DASHBOARD_REFRESH_MS"));
   return Number.isFinite(rawRefresh) && rawRefresh >= 1_000
@@ -167,8 +176,10 @@ export function redactRpcUrlForDisplay(url) {
 export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
   const upstreamUrls = collectUrls(source);
   const upstreamWsUrls = collectWsUrls(source);
-  // Keep public Devnet providers as a bounded fallback when a configured
-  // provider is unavailable or has an expired credential.
+  // Keep the official public Devnet endpoint as a bounded fallback when a
+  // configured provider is unavailable. Private providers must be explicitly
+  // configured; removing one from the environment must remove it from the
+  // runtime pool as well.
   const urls = unique([...upstreamUrls, ...DEFAULT_SOLANA_RPC_URLS]);
   return {
     port: parsePort(source),
@@ -178,6 +189,7 @@ export function getRpcGatewayConfig(source = globalThis?.process?.env ?? {}) {
     timeoutMs: parseTimeoutMs(source),
     probeIntervalMs: parseProbeIntervalMs(source),
     probeTimeoutMs: parseProbeTimeoutMs(source),
+    probeMode: parseProbeMode(source),
     dashboardRefreshMs: parseDashboardRefreshMs(source),
     mode: String(readEnv(source, "TSN_RPC_GATEWAY_MODE") ?? "balanced").toLowerCase(),
     logLevel: String(readEnv(source, "TSN_RPC_GATEWAY_LOG_LEVEL") ?? "info").toLowerCase(),
