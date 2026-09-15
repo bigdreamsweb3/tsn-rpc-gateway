@@ -18,3 +18,4 @@ console.log("Selection preview:");
 for (const upstream of selection.slice(0, 3)) {
   console.log(`- ${upstream.id} (${upstream.label})`);
 }
+
